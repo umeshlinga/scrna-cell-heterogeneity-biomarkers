@@ -1,0 +1,82 @@
+project:
+  name: CRC_scRNAseq_Heterogeneity_Biomarkers
+  version: 1.0.0
+  geo_accession: GSE132465
+  description: scRNA-seq cell-type heterogeneity in human CRC
+  paper: Lee et al. Nature Genetics 2020
+
+data:
+  geo_accession: GSE132465
+  url: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE132465
+  n_cells: 68060
+  n_patients: 23
+  conditions: [Tumor, Normal]
+  cancer_stages: [I, II, III, IV]
+
+qc:
+  min_genes: 200
+  max_genes: 7000
+  max_mito_pct: 20.0
+  min_counts: 500
+  max_counts: 60000
+  scrublet_threshold: 0.25
+  min_cells_per_gene: 3
+
+preprocessing:
+  n_top_genes: 3000
+  n_pcs: 50
+  n_neighbors: 15
+  harmony_batch_key: patient_id
+
+clustering:
+  resolution_range: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
+  final_resolution: 0.6
+  method: leiden
+
+annotation:
+  marker_genes:
+    Epithelial: [EPCAM, KRT8, KRT18, KRT19, CDH1]
+    Tumor_Epithelial: [EPCAM, MKI67, TOP2A, PCNA, MDK]
+    T_cells: [CD3D, CD3E, CD8A, CD4, FOXP3]
+    B_cells: [CD79A, MS4A1, CD19, IGKC]
+    Myeloid: [CD68, LYZ, S100A8, CD14, FCGR3A]
+    NK_cells: [NKG7, GNLY, KLRD1, NCAM1]
+    Fibroblasts: [COL1A1, COL3A1, ACTA2, FAP, PDGFRB]
+    Endothelial: [PECAM1, VWF, CDH5, MCAM, CLDN5]
+    Mast_cells: [TPSAB1, TPSB2, CPA3, KIT]
+
+trajectory:
+  method: diffmap
+  n_dcs: 10
+  cell_types: [Tumor_Epithelial, Epithelial]
+
+cell_communication:
+  method: cellphonedb
+  min_pct: 0.1
+  top_interactions: 50
+
+de_analysis:
+  methods: [wilcoxon, t-test]
+  logfc_threshold: 0.5
+  pval_threshold: 0.05
+  comparisons:
+    - name: Tumor_vs_Normal
+      group1: Tumor
+      group2: Normal
+    - name: StageIV_vs_StageI
+      group1: IV
+      group2: I
+
+enrichment:
+  gene_sets:
+    - KEGG_2021_Human
+    - GO_Biological_Process_2021
+    - Reactome_2022
+    - MSigDB_Hallmark_2020
+  pval_cutoff: 0.05
+
+ml:
+  models: [random_forest, xgboost, lightgbm, svm, logistic_regression]
+  cv_folds: 5
+  random_state: 42
+  target: Tumor_vs_Normal
